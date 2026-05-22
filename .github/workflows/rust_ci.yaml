@@ -1,0 +1,130 @@
+name: Rust CI
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: "."
+      ubuntu-packages:
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  rustfmt:
+    name: rustfmt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          components: rustfmt
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check --verbose
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          components: clippy
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install cargo-audit
+        uses: taiki-e/cache-cargo-install-action@417450f3c33ee20393705369577571770643d4c7 # v3
+        with:
+          tool: cargo-audit
+
+      - name: Run cargo audit
+        run: cargo audit
+
+  test:
+    name: Test (${{ matrix.os }} / ${{ matrix.toolchain }})
+    runs-on: ${{ matrix.os }}
+    needs: [rustfmt, clippy, audit]
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        toolchain:
+          - stable
+          - nightly
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Ubuntu packages
+        if: matrix.os == 'ubuntu-latest' && inputs.ubuntu-packages != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ inputs.ubuntu-packages }}
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          shared-key: ${{ matrix.os }}-${{ matrix.toolchain }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build
+        run: cargo build --all --no-default-features --all-features
+
+      - name: Test
+        run: cargo test --all --no-default-features --all-features
