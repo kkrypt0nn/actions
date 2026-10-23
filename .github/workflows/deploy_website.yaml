@@ -8,7 +8,7 @@ on:
         default: "."
       node-version:
         type: string
-        default: "24.15.0"
+        default: "24.22.1"
       install-command:
         type: string
         default: "npm install"
