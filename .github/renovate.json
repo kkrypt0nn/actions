@@ -6,6 +6,7 @@
     ":gitSignOff",
     "group:allNonMajor"
   ],
+  "assignees": ["kkrypt0nn"],
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "minimumReleaseAge": "7 days",
