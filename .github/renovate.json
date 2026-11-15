@@ -11,5 +11,32 @@
   "minimumReleaseAge": "7 days",
   "rangeStrategy": "pin",
   "rebaseWhen": "conflicted",
-  "schedule": ["on friday and saturday"]
+  "schedule": ["on friday and saturday"],
+
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/\\.yaml$/"
+      ],
+      "matchStrings": [
+        "node-version:\\s*\\n\\s*type:\\s*string\\s*\\n\\s*default:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "node",
+      "datasourceTemplate": "node-version",
+      "versioningTemplate": "node"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/\\.yaml$/"
+      ],
+      "matchStrings": [
+        "go-version:\\s*\\n\\s*type:\\s*string\\s*\\n\\s*default:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "go",
+      "datasourceTemplate": "golang-version",
+      "versioningTemplate": "semver"
+    }
+  ]
 }
